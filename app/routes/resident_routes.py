@@ -292,6 +292,25 @@ def cancel_visitor_booking(
     
     return {"message": "Visitor booking cancelled successfully"}
 
+@router2.get("/visitors/pending-approval", response_model=List[VisitorResponse])
+def get_pending_approval_visitors(
+    current_user: User = Depends(get_current_resident),
+    db: Session = Depends(get_db)
+):
+    """Get unplanned visitors waiting for resident approval"""
+    visitors = db.query(Visitor).filter(
+        Visitor.resident_id == current_user.id,
+        Visitor.status == "pending",  # Unplanned visitors waiting approval
+        Visitor.slot_id == None  # No slot assigned yet
+    ).all()
+    
+    enhanced_visitors = []
+    for visitor in visitors:
+        visitor_data = VisitorResponse.from_orm(visitor)
+        enhanced_visitors.append(visitor_data)
+    
+    return enhanced_visitors
+
 # ========== REQUEST MANAGEMENT ==========
 router3 = APIRouter()
 @router3.get("/requests", response_model=List[RequestResponse])
@@ -394,7 +413,14 @@ def get_resident_dashboard(
     # Get active visitors
     active_visitors = db.query(Visitor).filter(
         Visitor.resident_id == current_user.id,
-        Visitor.status.in_(["pending", "approved"])
+        Visitor.status.in_(["approved"])
+    ).all()
+    
+    # Get pending approval visitors (unplanned visitors)
+    pending_approval_visitors = db.query(Visitor).filter(
+        Visitor.resident_id == current_user.id,
+        Visitor.status == "pending",
+        Visitor.slot_id == None
     ).all()
     
     # Get pending requests
@@ -404,7 +430,8 @@ def get_resident_dashboard(
     ).all()
     
     # Get unread notifications count
-    unread_notifications = notification_crud.get_user_notifications(db, current_user.id, unread_only=True)
+    from app.crud.notification_crud import get_user_notifications
+    unread_notifications = get_user_notifications(db, current_user.id, unread_only=True)
     
     return {
         "assigned_slot": assigned_slot,
@@ -417,6 +444,14 @@ def get_resident_dashboard(
                 "entry_time": visitor.entry_time
             } for visitor in active_visitors
         ],
+        "pending_approval_visitors": [  # NEW: Show unplanned visitors waiting approval
+            {
+                "id": visitor.id,
+                "visitor_name": visitor.visitor_name,
+                "vehicle_number": visitor.vehicle_number,
+                "entry_time": visitor.entry_time
+            } for visitor in pending_approval_visitors
+        ],
         "pending_requests": [
             {
                 "id": req.id,
@@ -427,7 +462,6 @@ def get_resident_dashboard(
         ],
         "notifications_count": len(unread_notifications)
     }
-
 # ========== WEB SOCKET FOR REAL-TIME COMMUNICATION ==========
 
 @router5.websocket("/ws")

@@ -10,7 +10,7 @@ from app.models.request import Request
 
 # Import schemas
 from app.schemas.slot_schema import SlotCreate, SlotUpdate, SlotResponse
-from app.schemas.visitor_schema import VisitorResponse, VisitorUpdate
+from app.schemas.visitor_schema import VisitorCreate, VisitorResponse, VisitorUpdate
 from app.schemas.request_schema import RequestResponse, RequestUpdate
 from app.schemas.user_schema import UserResponse, UserCreate
 
@@ -210,9 +210,55 @@ def get_pending_visitors(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    """Get all pending visitor requests"""
+    """Get all pending visitor requests (unplanned visitors waiting resident approval)"""
     return visitor_crud.get_pending_visitors(db)
 
+@router2.post("/visitors/unplanned", response_model=VisitorResponse)
+def create_unplanned_visitor(
+    visitor_data: VisitorCreate,
+    current_user: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Create an unplanned visitor entry that requires resident approval"""
+    # Check if resident exists
+    resident = db.query(User).filter(
+        User.id == visitor_data.resident_id, 
+        User.role == "resident"
+    ).first()
+    
+    if not resident:
+        raise HTTPException(status_code=404, detail="Resident not found")
+    
+    # Create visitor with pending status (no slot assigned yet)
+    db_visitor = Visitor(
+        visitor_name=visitor_data.visitor_name,
+        vehicle_number=visitor_data.vehicle_number,
+        vehicle_type=visitor_data.vehicle_type,
+        entry_time=visitor_data.entry_time,
+        exit_time=visitor_data.exit_time,
+        resident_id=visitor_data.resident_id,
+        status="pending"  # Waiting for resident approval
+        # No slot_id assigned yet - will be assigned after resident approval
+    )
+    
+    db.add(db_visitor)
+    db.commit()
+    db.refresh(db_visitor)
+    
+    # Create notification for resident
+    from app.crud.notification_crud import create_notification
+    create_notification(
+        db,
+        resident.id,
+        "Unplanned Visitor Approval Required",
+        f"Visitor {visitor_data.visitor_name} with vehicle {visitor_data.vehicle_number} is waiting for approval.",
+        "visitor_approval_request"
+    )
+    
+    return db_visitor
+
+
+'''
 @router2.put("/visitors/{visitor_id}/approve")
 def approve_visitor(
     visitor_id: int,
@@ -244,6 +290,7 @@ def reject_visitor(
     """Reject a visitor request"""
     visitor = visitor_crud.update_visitor_status(db, visitor_id, "rejected")
     return {"message": "Visitor request rejected"}
+'''
 
 @router2.put("/visitors/{visitor_id}/mark-exit")
 def mark_visitor_exit(

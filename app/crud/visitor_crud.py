@@ -76,3 +76,7 @@ def mark_visitor_exit(db: Session, visitor_id: int):
     
     db.commit()
     return db_visitor
+
+def get_pending_visitors(db: Session):
+    """Get all visitors with pending status (unplanned visitors waiting approval)"""
+    return db.query(Visitor).filter(Visitor.status == "pending").all()
