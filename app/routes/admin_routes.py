@@ -304,7 +304,7 @@ def mark_visitor_exit(
 
 # ========== REQUEST MANAGEMENT ==========
 router3 = APIRouter()
-@router3.get("/requests", response_model=List[RequestResponse])
+@router3.get("/", response_model=List[RequestResponse])
 def get_all_requests(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -331,21 +331,53 @@ def get_all_requests(
     
     return enhanced_requests
 
-@router3.get("/requests/pending", response_model=List[RequestResponse])
+@router3.get("/pending", response_model=List[RequestResponse])
 def get_pending_requests(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
     """Get all pending requests"""
-    return request_crud.get_pending_requests(db)
+    requests = request_crud.get_pending_requests(db)
+    
+    enhanced_requests = []
+    for req in requests:
+        request_data = RequestResponse.from_orm(req)
+        
+        resident = db.query(User).filter(User.id == req.resident_id).first()
+        if resident:
+            request_data.resident_name = resident.full_name
+        
+        slot = db.query(Slot).filter(Slot.id == req.slot_id).first()
+        if slot:
+            request_data.slot_number = slot.slot_number
+        
+        enhanced_requests.append(request_data)
+    
+    return enhanced_requests
 
-@router3.get("/requests/damage-reports", response_model=List[RequestResponse])
+@router3.get("/damage-reports", response_model=List[RequestResponse])
 def get_damage_reports(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
     """Get all damage report requests"""
-    return request_crud.get_requests_by_type(db, "damage_report")
+    requests = request_crud.get_requests_by_type(db, "damage_report")
+    
+    enhanced_requests = []
+    for req in requests:
+        request_data = RequestResponse.from_orm(req)
+        
+        resident = db.query(User).filter(User.id == req.resident_id).first()
+        if resident:
+            request_data.resident_name = resident.full_name
+        
+        slot = db.query(Slot).filter(Slot.id == req.slot_id).first()
+        if slot:
+            request_data.slot_number = slot.slot_number
+        
+        enhanced_requests.append(request_data)
+    
+    return enhanced_requests
 
 @router3.put("/requests/{request_id}/approve")
 def approve_request(

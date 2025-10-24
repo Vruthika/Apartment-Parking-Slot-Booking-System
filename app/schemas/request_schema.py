@@ -19,7 +19,6 @@ class RequestResponse(RequestBase):
     resident_id: int
     resident_name: Optional[str] = None
     slot_number: Optional[str] = None
-    created_at: datetime
 
     class Config:
         from_attributes = True

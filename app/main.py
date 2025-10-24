@@ -21,5 +21,5 @@ app.include_router(resident_routes.router6, prefix="/resident/unplanned", tags=[
 app.include_router(admin_routes.router, prefix="/admin", tags=["Admin"])
 app.include_router(admin_routes.router1, prefix="/admin/slot", tags=["Admin Slot"])
 app.include_router(admin_routes.router2, prefix="/admin/visitor", tags=["Admin Visitor"])
-app.include_router(admin_routes.router3, prefix="/admin/notification", tags=["Admin Notification"])
+app.include_router(admin_routes.router3, prefix="/admin/requests", tags=["Admin Requests"])
 # app.include_router(admin_routes.router4, prefix="/admin/dashboard", tags=["Admin Dashboard"])

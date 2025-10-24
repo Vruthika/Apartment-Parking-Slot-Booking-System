@@ -444,20 +444,11 @@ def get_resident_dashboard(
                 "entry_time": visitor.entry_time
             } for visitor in active_visitors
         ],
-        "pending_approval_visitors": [  # NEW: Show unplanned visitors waiting approval
-            {
-                "id": visitor.id,
-                "visitor_name": visitor.visitor_name,
-                "vehicle_number": visitor.vehicle_number,
-                "entry_time": visitor.entry_time
-            } for visitor in pending_approval_visitors
-        ],
         "pending_requests": [
             {
                 "id": req.id,
                 "request_type": req.request_type,
                 "status": req.status,
-                "created_at": req.created_at if hasattr(req, 'created_at') else None
             } for req in pending_requests
         ],
         "notifications_count": len(unread_notifications)
