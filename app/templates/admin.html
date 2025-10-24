@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin Chat</title>
+    <style>
+      body {
+        font-family: Arial;
+        margin: 20px;
+      }
+      #chat-box {
+        border: 1px solid #ccc;
+        height: 400px;
+        overflow-y: auto;
+        padding: 10px;
+        background: #f9f9f9;
+      }
+      .message {
+        margin: 5px 0;
+      }
+      .admin {
+        text-align: right;
+        font-weight: bold;
+      }
+      input {
+        padding: 8px;
+        width: 50%;
+      }
+      button {
+        padding: 8px;
+      }
+      select {
+        padding: 6px;
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>🧑‍💼 Admin Chat</h2>
+
+    <!-- Dropdown to filter users -->
+    <label>Filter by user:</label>
+    <select id="user-filter">
+      <option value="all">All</option>
+    </select>
+
+    <div id="chat-box"></div>
+    <br />
+    <input id="message" placeholder="Type message here" />
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+      const ws = new WebSocket("ws://localhost:3000/ws/admin");
+      const chatBox = document.getElementById("chat-box");
+      const userFilter = document.getElementById("user-filter");
+
+      // Store all messages
+      const allMessages = [];
+      // Track connected users
+      const connectedUsers = new Set();
+
+      ws.onmessage = (event) => {
+        const data = event.data;
+
+        // Handle user connection notifications
+        if (data.startsWith("📩 ") || data.includes("disconnected")) {
+          const match = data.match(/📩 (.*?) connected|⚠️ (.*?) disconnected/);
+          const username = match[1] || match[2];
+          if (username) {
+            if (data.includes("connected")) connectedUsers.add(username);
+            if (data.includes("disconnected")) connectedUsers.delete(username);
+            updateUserDropdown();
+          }
+          addSystemMessage(data);
+          return;
+        }
+
+        // Extract username from message if possible
+        const userMatch = data.match(/<b.*?>(.*?)<\/b>/);
+        const username = userMatch ? userMatch[1] : "Admin";
+
+        allMessages.push({ username, content: data });
+        displayMessages();
+      };
+
+      function updateUserDropdown() {
+        // Keep "All" at top
+        userFilter.innerHTML = '<option value="all">All</option>';
+        connectedUsers.forEach((user) => {
+          const option = document.createElement("option");
+          option.value = user;
+          option.textContent = user;
+          userFilter.appendChild(option);
+        });
+      }
+
+      function addSystemMessage(msg) {
+        const div = document.createElement("div");
+        div.classList.add("message");
+        div.style.fontStyle = "italic";
+        div.textContent = msg;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function displayMessages() {
+        const filter = userFilter.value;
+        chatBox.innerHTML = "";
+        allMessages.forEach((msg) => {
+          if (
+            filter === "all" ||
+            msg.username === filter ||
+            msg.username === "Admin"
+          ) {
+            chatBox.innerHTML += msg.content+"<br>";
+          }
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      userFilter.addEventListener("change", displayMessages);
+
+      function sendMessage() {
+        const input = document.getElementById("message");
+        const selectedUser = userFilter.value;
+
+        if (selectedUser === "all") {
+          alert("Please select a specific user to send a message.");
+          return;
+        }
+
+        const messageText = input.value.trim();
+        if (!messageText) return;
+
+        const messageToSend = `${selectedUser}:${messageText}`;
+        ws.send(messageToSend);
+
+        allMessages.push({
+          username: selectedUser,
+          content: `<div class="message admin"><b>Admin to ${selectedUser}:</b> ${messageText}</div>`,
+        });
+
+        displayMessages();
+
+        input.value = "";
+      }
+    </script>
+  </body>
+</html>

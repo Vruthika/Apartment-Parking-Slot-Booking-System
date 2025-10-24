@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.config.database import engine, Base
 from app.routes import auth_routes, resident_routes, admin_routes
-from app.models import user, slot, visitor, request, notification
+from app.routes.chat_routes import router as chat_router
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -23,3 +23,6 @@ app.include_router(admin_routes.router1, prefix="/admin/slot", tags=["Admin Slot
 app.include_router(admin_routes.router2, prefix="/admin/visitor", tags=["Admin Visitor"])
 app.include_router(admin_routes.router3, prefix="/admin/requests", tags=["Admin Requests"])
 # app.include_router(admin_routes.router4, prefix="/admin/dashboard", tags=["Admin Dashboard"])
+
+app.include_router(chat_router)
+
