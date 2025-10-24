@@ -96,8 +96,8 @@ def delete_resident(
     return {"message": "Resident deleted successfully"}
 
 # ========== SLOT MANAGEMENT ==========
-
-@router.get("/slots", response_model=List[SlotResponse])
+router1 = APIRouter()
+@router1.get("/slots", response_model=List[SlotResponse])
 def get_all_slots(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -117,7 +117,7 @@ def get_all_slots(
     
     return enhanced_slots
 
-@router.post("/slots", response_model=SlotResponse)
+@router1.post("/slots", response_model=SlotResponse)
 def create_slot(
     slot: SlotCreate,
     current_user: User = Depends(get_current_admin),
@@ -126,7 +126,7 @@ def create_slot(
     """Create a new parking slot"""
     return slot_crud.create_slot(db, slot)
 
-@router.put("/slots/{slot_id}", response_model=SlotResponse)
+@router1.put("/slots/{slot_id}", response_model=SlotResponse)
 def update_slot(
     slot_id: int,
     slot_update: SlotUpdate,
@@ -136,7 +136,7 @@ def update_slot(
     """Update a parking slot"""
     return slot_crud.update_slot(db, slot_id, slot_update)
 
-@router.delete("/slots/{slot_id}")
+@router1.delete("/slots/{slot_id}")
 def delete_slot(
     slot_id: int,
     current_user: User = Depends(get_current_admin),
@@ -145,7 +145,7 @@ def delete_slot(
     """Delete a parking slot"""
     return slot_crud.delete_slot(db, slot_id)
 
-@router.put("/slots/{slot_id}/mark-damaged")
+@router1.put("/slots/{slot_id}/mark-damaged")
 def mark_slot_damaged(
     slot_id: int,
     current_user: User = Depends(get_current_admin),
@@ -160,7 +160,7 @@ def mark_slot_damaged(
     db.commit()
     return {"message": f"Slot {slot.slot_number} marked as damaged"}
 
-@router.put("/slots/{slot_id}/mark-repaired")
+@router1.put("/slots/{slot_id}/mark-repaired")
 def mark_slot_repaired(
     slot_id: int,
     current_user: User = Depends(get_current_admin),
@@ -176,8 +176,8 @@ def mark_slot_repaired(
     return {"message": f"Slot {slot.slot_number} marked as repaired and available"}
 
 # ========== VISITOR MANAGEMENT ==========
-
-@router.get("/visitors", response_model=List[VisitorResponse])
+router2 = APIRouter()
+@router2.get("/visitors", response_model=List[VisitorResponse])
 def get_all_visitors(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -205,7 +205,7 @@ def get_all_visitors(
     
     return enhanced_visitors
 
-@router.get("/visitors/pending", response_model=List[VisitorResponse])
+@router2.get("/visitors/pending", response_model=List[VisitorResponse])
 def get_pending_visitors(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -213,7 +213,7 @@ def get_pending_visitors(
     """Get all pending visitor requests"""
     return visitor_crud.get_pending_visitors(db)
 
-@router.put("/visitors/{visitor_id}/approve")
+@router2.put("/visitors/{visitor_id}/approve")
 def approve_visitor(
     visitor_id: int,
     slot_id: int,
@@ -235,7 +235,7 @@ def approve_visitor(
     
     return {"message": f"Visitor approved and assigned slot {slot.slot_number}"}
 
-@router.put("/visitors/{visitor_id}/reject")
+@router2.put("/visitors/{visitor_id}/reject")
 def reject_visitor(
     visitor_id: int,
     current_user: User = Depends(get_current_admin),
@@ -245,7 +245,7 @@ def reject_visitor(
     visitor = visitor_crud.update_visitor_status(db, visitor_id, "rejected")
     return {"message": "Visitor request rejected"}
 
-@router.put("/visitors/{visitor_id}/mark-exit")
+@router2.put("/visitors/{visitor_id}/mark-exit")
 def mark_visitor_exit(
     visitor_id: int,
     current_user: User = Depends(get_current_admin),
@@ -256,8 +256,8 @@ def mark_visitor_exit(
     return {"message": "Visitor marked as exited"}
 
 # ========== REQUEST MANAGEMENT ==========
-
-@router.get("/requests", response_model=List[RequestResponse])
+router3 = APIRouter()
+@router3.get("/requests", response_model=List[RequestResponse])
 def get_all_requests(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -284,7 +284,7 @@ def get_all_requests(
     
     return enhanced_requests
 
-@router.get("/requests/pending", response_model=List[RequestResponse])
+@router3.get("/requests/pending", response_model=List[RequestResponse])
 def get_pending_requests(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -292,7 +292,7 @@ def get_pending_requests(
     """Get all pending requests"""
     return request_crud.get_pending_requests(db)
 
-@router.get("/requests/damage-reports", response_model=List[RequestResponse])
+@router3.get("/requests/damage-reports", response_model=List[RequestResponse])
 def get_damage_reports(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -300,7 +300,7 @@ def get_damage_reports(
     """Get all damage report requests"""
     return request_crud.get_requests_by_type(db, "damage_report")
 
-@router.put("/requests/{request_id}/approve")
+@router3.put("/requests/{request_id}/approve")
 def approve_request(
     request_id: int,
     current_user: User = Depends(get_current_admin),
@@ -310,7 +310,7 @@ def approve_request(
     request = request_crud.update_request_status(db, request_id, "approved")
     return {"message": "Request approved"}
 
-@router.put("/requests/{request_id}/reject")
+@router3.put("/requests/{request_id}/reject")
 def reject_request(
     request_id: int,
     current_user: User = Depends(get_current_admin),
@@ -320,7 +320,7 @@ def reject_request(
     request = request_crud.update_request_status(db, request_id, "rejected")
     return {"message": "Request rejected"}
 
-@router.put("/requests/{request_id}/complete")
+@router3.put("/requests/{request_id}/complete")
 def complete_request(
     request_id: int,
     current_user: User = Depends(get_current_admin),
@@ -331,8 +331,8 @@ def complete_request(
     return {"message": "Request marked as completed"}
 
 # ========== DASHBOARD SUMMARY ==========
-
-@router.get("/summary")
+router4 = APIRouter()
+@router4.get("/summary")
 def get_admin_summary(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
